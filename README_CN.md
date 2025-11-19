@@ -109,41 +109,42 @@ export CRAWL4AI_USER_AGENT="MCP Spider Bot 1.0"
 
 ### 1. `crawl_web_page`
 
-抓取指定 URL 的网页内容。
+抓取指定 URL 的网页内容并保存为多种格式。
 
 **参数：**
 - `url` (string, 必需): 要抓取的网页 URL
-- `output_dir` (string, 可选): 输出目录路径，默认为 "test_output"
+- `save_path` (string, 必需): 保存爬取内容的目录路径
 
 **功能：**
 - 自动生成网页截图 (PNG)
 - 导出 PDF 版本
-- 生成 Markdown 格式内容
+- 生成原始 Markdown 内容
+- 生成清理后的 Markdown 内容
+- 保存完整 HTML 内容
 - 提取结构化数据 (JSON)
+- 下载并保存引用的文件
 
 **示例使用：**
 ```python
-# 抓取网页并保存到默认目录
-result = await session.call_tool("crawl_web_page", {
-    "url": "https://example.com"
-})
-
-# 指定输出目录
+# 抓取网页并保存到指定目录
 result = await session.call_tool("crawl_web_page", {
     "url": "https://example.com",
-    "output_dir": "/path/to/custom/output"
+    "save_path": "./output_directory"
 })
 ```
 
 ### 2. `say_hello`
 
-简单的问候工具，用于测试连接。
+简单的问候工具，用于测试服务器连接。
 
-**参数：** 无
+**参数：**
+- `name` (string, 可选): 要问候的名字，默认为 "World"
 
 **示例使用：**
 ```python
-result = await session.call_tool("say_hello", {})
+result = await session.call_tool("say_hello", {
+    "name": "Alice"
+})
 ```
 
 ### 3. `echo_message`
@@ -250,22 +251,85 @@ flake8 spider_mcp_server/
 black spider_mcp_server/
 ```
 
+## 📚 项目结构
+
+```
+crawler-mcp-server/
+├── spider_mcp_server/          # 主包目录
+│   ├── __init__.py            # 包初始化
+│   ├── server.py              # MCP 服务器实现
+│   ├── crawl.py              # 爬虫逻辑和文件处理
+│   └── utils.py              # 文件 I/O 工具函数
+├── test/                     # 测试套件
+│   ├── test_complete_crawler.py # 完整集成测试
+│   ├── test_hello.py          # Hello/echo 功能测试
+│   ├── test_server.py         # MCP 服务器协议测试
+│   ├── test_crawl.py          # 爬虫功能测试
+│   └── test_complete.py       # 端到端工作流测试
+├── test_output/              # 测试输出目录
+├── typings/                  # crawl4ai 类型存根
+├── pyproject.toml            # 项目配置
+└── README.md                # 项目说明
+```
+
+## 🎯 配置详情
+
+### CSS 提取策略
+
+爬虫使用预配置的 CSS 提取模式：
+
+```javascript
+{
+  "baseSelector": "body",
+  "fields": [
+    {"name": "title", "selector": "h2", "type": "text"},
+    {"name": "link", "selector": "a", "type": "attribute", "attribute": "href"},
+    {"name": "p", "selector": "p", "type": "text"}
+  ]
+}
+```
+
+### 内容过滤
+
+使用 `PruningContentFilter` 配置：
+- `threshold`: 0.35 (动态阈值)
+- `min_word_threshold`: 3
+- `threshold_type`: "dynamic"
+
 ## 📚 API 参考
 
-### 核心类和函数
+### 核心函数
 
-#### `Crawl4aiExtractor`
-主要的爬虫提取器类，封装了 crawl4ai 的功能。
+#### `save()` 函数 (`utils.py`)
+保存内容到文件，处理编码问题。
 
-**主要方法：**
-- `extract_content(url: str) -> dict`: 提取网页内容
-- `save_results(result: dict, output_dir: str, url: str)`: 保存结果到文件
+**参数：**
+- `path`: 目录路径
+- `name`: 文件名
+- `s`: 内容 (string, bytes, 或 bytearray)
+- `call`: 保存文件路径的回调函数
 
-#### `save_markdown_file(content: str, file_path: str) -> str`
-保存 Markdown 内容到文件
+#### `saveJson()` 函数 (`crawl.py`)
+异步函数，保存下载文件信息并处理文件下载。
 
-#### `save_binary_file(data: bytes, file_path: str) -> str`
-保存二进制数据（如截图、PDF）到文件
+**功能：**
+- 保存 `downloaded_files.json` 文件元数据
+- 下载引用文件到 `files/` 子目录
+- 下载失败的错误处理
+
+## 🎮 CLI 入口点
+
+包包含命令行入口点：
+
+```bash
+# 安装后可直接运行
+spider-mcp
+```
+
+等效于运行：
+```bash
+python -m spider_mcp_server.server
+```
 
 ## ⚠️ 注意事项
 
