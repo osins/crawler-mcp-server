@@ -276,38 +276,38 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
 async def crawl_example():
-    # 配置服务器连接参数（请根据实际路径调整）
+    # Configure server connection parameters (adjust paths as needed)
     project_root = Path("/path/to/your/crawler-mcp-server")
     server_params = StdioServerParameters(
         command=str(project_root / "venv" / "bin" / "python"),
         args=[str(project_root / "spider_mcp_server" / "server.py")]
     )
     
-    # 创建输出目录
+    # Create output directory
     output_dir = "./crawl_results"
     os.makedirs(output_dir, exist_ok=True)
     
     try:
-        # 连接到MCP服务器
+        # Connect to MCP server
         async with stdio_client(server_params) as (read, write):
             async with ClientSession(read, write) as session:
-                # 初始化会话
+                # Initialize session
                 await session.initialize()
                 
-                # 调用爬虫工具
+                # Call crawling tool
                 result = await session.call_tool("crawl_web_page", {
                     "url": "https://github.com/unclecode/crawl4ai",
                     "save_path": output_dir
                 })
                 
-                # ✅ 正确处理返回结果
-                # MCP服务器返回的是 CallToolResult 对象，内容在 result.content 中
+                # ✅ Correct return value handling
+                # MCP server returns CallToolResult object, content is in result.content
                 for content in result.content:
                     if content.type == "text":
-                        print(f"✅ 爬取结果: {content.text}")
+                        print(f"✅ Crawling result: {content.text}")
                         
     except Exception as e:
-        print(f"❌ 爬取失败: {e}")
+        print(f"❌ Crawling failed: {e}")
 
 # 运行示例
 asyncio.run(crawl_example())
@@ -328,12 +328,12 @@ for i, url in enumerate(urls):
         "save_path": f"./results/crawl_{i+1}"
     })
     
-    # ✅ 正确处理返回结果
+    # ✅ Correct return value handling
     for content in result.content:
         if content.type == "text":
             print(f"Crawled: {url} - {content.text}")
     
-    # 添加延时避免过于频繁的请求
+    # Add delay to avoid too frequent requests
     await asyncio.sleep(2)
 ```
 
