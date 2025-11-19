@@ -10,7 +10,7 @@ from spider_mcp_server.server import handle_call_tool
 async def test_crawl_functionality():
     print("Testing crawl_web_page functionality...")
     
-    # 测试爬取一个简单的页面
+    # Test crawling a simple page
     try:
         result = await handle_call_tool('crawl_web_page', {
             'url': 'https://httpbin.org/html',
@@ -25,7 +25,7 @@ async def test_crawl_functionality():
     except Exception as e:
         print(f"Error during crawling: {e}")
         
-    # 测试爬取另一个页面
+    # Test crawling another page
     print("\nTesting with another URL...")
     try:
         result = await handle_call_tool('crawl_web_page', {
@@ -41,7 +41,7 @@ async def test_crawl_functionality():
     except Exception as e:
         print(f"Error during crawling: {e}")
 
-    # 测试错误处理 - 无效URL
+    # Test error handling - invalid URL
     print("\nTesting error handling with invalid URL...")
     try:
         result = await handle_call_tool('crawl_web_page', {

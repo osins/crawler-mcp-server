@@ -12,11 +12,11 @@ from spider_mcp_server.server import server
 async def test_mcp_functionality():
     print("Testing MCP server functionality...")
     
-    # 创建内存流来模拟stdio
+    # Create memory streams to simulate stdio
     request_send, request_receive = create_memory_object_stream(max_buffer_size=1)
     response_send, response_receive = create_memory_object_stream(max_buffer_size=1)
     
-    # 启动服务器任务
+    # Start server task
     async def run_server():
         await server.run(
             request_receive,
@@ -26,7 +26,7 @@ async def test_mcp_functionality():
     
     server_task = asyncio.create_task(run_server())
     
-    # 1. 发送初始化请求
+    # 1. Send initialization request
     init_request = {
         "jsonrpc": "2.0",
         "id": "init",
@@ -44,11 +44,11 @@ async def test_mcp_functionality():
     print("Sending initialize request...")
     await request_send.send(init_request)
     
-    # 接收初始化响应
+    # Receive initialization response
     init_response = await response_receive.receive()
     print("Initialize response:", init_response)
     
-    # 2. 发送initialized通知
+    # 2. Send initialized notification
     initialized_request = {
         "jsonrpc": "2.0",
         "method": "initialized",
@@ -58,7 +58,7 @@ async def test_mcp_functionality():
     print("\nSending initialized notification...")
     await request_send.send(initialized_request)
     
-    # 3. 发送list tools请求
+    # 3. Send list tools request
     list_tools_request = {
         "jsonrpc": "2.0",
         "id": "list_tools",
@@ -69,11 +69,11 @@ async def test_mcp_functionality():
     print("Sending tools/list request...")
     await request_send.send(list_tools_request)
     
-    # 接收工具列表响应
+    # Receive tools list response
     tools_response = await response_receive.receive()
     print("Tools response:", tools_response)
     
-    # 4. 调用say_hello工具
+    # 4. Call say_hello tool
     call_hello_request = {
         "jsonrpc": "2.0",
         "id": "call_hello",
@@ -87,11 +87,11 @@ async def test_mcp_functionality():
     print("\nSending call to say_hello tool...")
     await request_send.send(call_hello_request)
     
-    # 接收say_hello响应
+    # Receive say_hello response
     hello_response = await response_receive.receive()
     print("Say hello response:", hello_response)
     
-    # 5. 调用echo_message工具
+    # 5. Call echo_message tool
     call_echo_request = {
         "jsonrpc": "2.0",
         "id": "call_echo",
@@ -105,11 +105,11 @@ async def test_mcp_functionality():
     print("\nSending call to echo_message tool...")
     await request_send.send(call_echo_request)
     
-    # 接收echo_message响应
+    # Receive echo_message response
     echo_response = await response_receive.receive()
     print("Echo message response:", echo_response)
     
-    # 停止服务器
+    # Stop server
     server_task.cancel()
     try:
         await server_task

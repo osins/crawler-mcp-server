@@ -143,14 +143,14 @@ async def handle_call_tool(name: str, arguments: dict[str, object]) -> list[Text
                 result = await crawler.arun(url=url, config=crawler_config)
                 
                 if result.success:
-                    # 创建目录
+                    # Create directories
                     os.makedirs(save_path, exist_ok=True)
                     files_dir = os.path.join(save_path, 'files')
                     os.makedirs(files_dir, exist_ok=True)
                     
                     saved_files = []
                     
-                    # 1. 保存HTML文件
+                    # 1. Save HTML file
                     if hasattr(result, 'html') and result.html:
                         html_path = os.path.join(save_path, 'output.html')
                         with open(html_path, 'w', encoding='utf-8') as f:
@@ -160,7 +160,7 @@ async def handle_call_tool(name: str, arguments: dict[str, object]) -> list[Text
                                 _ = f.write(str(result.html))
                         saved_files.append(html_path)
                     
-                    # 1. 保存HTML文件
+                    # 2. Save Markdown files
                     if hasattr(result, 'markdown') and result.markdown:
                         save(
                             save_path, 
@@ -176,16 +176,16 @@ async def handle_call_tool(name: str, arguments: dict[str, object]) -> list[Text
                             lambda s: saved_files.append(s)
                         )
                     
-                    # 2. 保存JSON文件（extracted_content）
+                    # 3. Save JSON file (extracted_content)
                     save(save_path, 'output.json', result.extracted_content, lambda s: saved_files.append(s))
                     
-                    # 3. 保存截图文件
+                    # 4. Save screenshot file
                     save(save_path, 'output.png', result.screenshot, lambda s: saved_files.append(s))
                     
-                    # 4. 保存PDF文件
+                    # 5. Save PDF file
                     save(save_path, 'output.pdf', result.pdf, lambda s: saved_files.append(s))
                     
-                    # 5. 保存downloaded_files为JSON
+                    # 6. Save downloaded files as JSON
                     await saveJson(save_path, result, lambda s: saved_files.append(s))
                     
                     success_msg = f"Successfully crawled {url} and saved {len(saved_files)} files to {save_path}"

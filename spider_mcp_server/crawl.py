@@ -11,7 +11,7 @@ async def saveJson(path: str, result: CrawlResult, call: Callable[[str], None]):
         files_dir = os.path.join(path, 'files')
         os.makedirs(files_dir, exist_ok=True)
 
-        # 6. 下载并保存文件列表中的文件到files子目录
+        # Download and save files from the downloaded files list to files subdirectory
         for file_info in result.downloaded_files:
             if 'url' in file_info and 'filename' in file_info:
                 file_url = file_info['url']
@@ -19,7 +19,7 @@ async def saveJson(path: str, result: CrawlResult, call: Callable[[str], None]):
                 file_path = os.path.join(files_dir, filename)
                 
                 try:
-                    # 使用aiohttp下载文件
+                    # Use aiohttp to download file
                     async with aiohttp.ClientSession() as session:
                         async with session.get(file_url) as response:
                             if response.status == 200:
