@@ -55,11 +55,11 @@ pip install -e .
     "spider": {
       "command": "python",
       "args": [
-        "/Users/shaoyingwang/works/codes/mcp/spider/spider_mcp_server/server.py"
+        "/path/to/crawler-mcp-server/spider_mcp_server/server.py"
       ],
       "description": "MCP spider server using crawl4ai for web crawling and content extraction",
       "env": {
-        "PYTHONPATH": "/Users/shaoyingwang/works/codes/mcp/spider"
+        "PYTHONPATH": "/path/to/crawler-mcp-server"
       }
     }
   }
@@ -189,7 +189,7 @@ async def crawl_example():
     # 连接到 MCP 服务器
     server_params = StdioServerParameters(
         command="python",
-        args=["/path/to/spider_mcp_server/server.py"]
+        args=["/path/to/crawler-mcp-server/spider_mcp_server/server.py"]
     )
     
     async with stdio_client(server_params) as (read, write):
