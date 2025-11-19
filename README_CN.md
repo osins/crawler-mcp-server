@@ -166,14 +166,14 @@ result = await session.call_tool("echo_message", {
 
 ```
 output_directory/
-├── example_com.png          # 网页截图
-├── example_com.pdf          # PDF 版本
-├── example_com.md          # Markdown 内容
-├── example_com_cleaned.md  # 清理后的 Markdown
-├── example_com.json        # 结构化数据
-├── example_com_iframes.md  # iframe 内容
-├── example_com_links.md    # 链接列表
-└── example_com_images.md   # 图片列表
+├── output.html              # 网页 HTML 内容
+├── output.json              # 结构化数据（JSON）
+├── output.png               # 网页截图
+├── output.pdf               # PDF 版本
+├── raw_markdown.md          # 原始 Markdown 内容
+├── fit_markdown.md          # 清理后的 Markdown 内容
+├── downloaded_files.json    # 下载文件列表（如果有）
+└── files/                   # 下载的文件目录（如果有）
 ```
 
 ## 🔍 使用示例
