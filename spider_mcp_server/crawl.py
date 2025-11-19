@@ -1,7 +1,9 @@
 
 import os
 import json
+import uuid
 import aiohttp
+from datetime import datetime
 from typing import Callable
 from crawl4ai.models import CrawlResult
 from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlerRunConfig, JsonCssExtractionStrategy
@@ -35,7 +37,7 @@ async def saveJson(path: str, result: CrawlResult, call: Callable[[str], None]):
                     print(f"Failed to download {file_url}: {download_error}")
 
 
-async def crawl_web_page(url: str, save_path: str) -> str:
+async def crawl_web_page(url: str, path: str) -> str:
     """
     Crawl a web page and save content in multiple formats (HTML, JSON, PDF, screenshot) with downloaded files.
     
@@ -49,7 +51,7 @@ async def crawl_web_page(url: str, save_path: str) -> str:
     if not url:
         return "URL is required for crawling"
     
-    if not save_path:
+    if not path:
         return "Save path is required for saving content"
     
     try:
@@ -88,44 +90,45 @@ async def crawl_web_page(url: str, save_path: str) -> str:
             
             if result.success:
                 # Create directories
-                os.makedirs(save_path, exist_ok=True)
-                files_dir = os.path.join(save_path, 'files')
+                path = f"{path}/{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+                os.makedirs(path, exist_ok=True)
+                files_dir = os.path.join(path, 'files')
                 os.makedirs(files_dir, exist_ok=True)
                 
                 saved_files = []
                 
                 # 1. Save HTML file
-                save(save_path, 'output.html', result.html, lambda s: saved_files.append(s))
+                save(path, 'output.html', result.html, lambda s: saved_files.append(s))
                 
                 # 2. Save Markdown files
                 if hasattr(result, 'markdown') and result.markdown:
                     save(
-                        save_path, 
+                        path, 
                         'raw_markdown.md',
                         result.markdown.raw_markdown, 
                         lambda s: saved_files.append(s)
                     )
 
                     save(
-                        save_path, 
+                        path, 
                         'fit_markdown.md',
                         result.markdown.fit_markdown, 
                         lambda s: saved_files.append(s)
                     )
                 
                 # 3. Save JSON file (extracted_content)
-                save(save_path, 'output.json', result.extracted_content, lambda s: saved_files.append(s))
+                save(path, 'output.json', result.extracted_content, lambda s: saved_files.append(s))
                 
                 # 4. Save screenshot file
-                save(save_path, 'output.png', result.screenshot, lambda s: saved_files.append(s))
+                save(path, 'output.png', result.screenshot, lambda s: saved_files.append(s))
                 
                 # 5. Save PDF file
-                save(save_path, 'output.pdf', result.pdf, lambda s: saved_files.append(s))
+                save(path, 'output.pdf', result.pdf, lambda s: saved_files.append(s))
                 
                 # 6. Save downloaded files as JSON
-                await saveJson(save_path, result, lambda s: saved_files.append(s))
+                await saveJson(path, result, lambda s: saved_files.append(s))
                 
-                return f"Successfully crawled {url} and saved {len(saved_files)} files to {save_path}"
+                return f"Successfully crawled {url} and saved {len(saved_files)} files to {path}"
             else:
                 print("Error:", result.error_message)
                 return f"Failed to crawl URL: {result.error_message}"

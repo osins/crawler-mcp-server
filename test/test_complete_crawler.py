@@ -17,7 +17,7 @@ async def test_complete_crawler():
     print("=" * 50)
     
     # Create temporary directory
-    temp_dir = "./test_output/complete_crawler_test"
+    temp_dir = "./test_output"
     
     clean_temp_dir(temp_dir)
 
