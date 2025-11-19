@@ -3,14 +3,31 @@ import os
 import json
 import uuid
 import aiohttp
+import litellm
+
 from datetime import datetime
-from typing import Callable
+from typing import Callable, List
+from pydantic import BaseModel, Field
 from crawl4ai.models import CrawlResult
-from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlerRunConfig, JsonCssExtractionStrategy
+from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlerRunConfig, JsonCssExtractionStrategy, LLMConfig, LLMExtractionStrategy
 from crawl4ai.content_filter_strategy import PruningContentFilter
 from crawl4ai.markdown_generation_strategy import DefaultMarkdownGenerator
+from crawl4ai.extraction_strategy import JsonXPathExtractionStrategy
 
+from spider_mcp_server.llm import llm_config
 from spider_mcp_server.utils import save
+
+
+def crawl_config():
+    if(os.getenv("CRAWL_MODE") == "llm"):
+        return llm_config()
+
+    return CrawlerRunConfig(
+        markdown_generator=DefaultMarkdownGenerator(),
+        screenshot=True,
+        pdf=True,
+        cache_mode="bypass" 
+    )
 
 async def saveJson(path: str, result: CrawlResult, call: Callable[[str], None]):
     if hasattr(result, 'downloaded_files') and result.downloaded_files:
@@ -55,39 +72,13 @@ async def crawl_web_page(url: str, path: str) -> str:
         return "Save path is required for saving content"
     
     try:
-        schema = {
-            "baseSelector": "body",
-            "fields": [
-                {"name": "title", "selector": "h2", "type": "text"},
-                {"name": "link", "selector": "a", "type": "attribute", "attribute": "href"},
-                {"name": "p", "selector": "p", "type": "text"}
-            ]
-        }
-
-        filter = PruningContentFilter(
-            threshold=0.35,
-            min_word_threshold=3,
-            threshold_type="dynamic"
-        )
-
-        md_generator = DefaultMarkdownGenerator(content_filter=filter)
-
         # Configure browser and crawler
         browser_config = BrowserConfig(headless=True, java_script_enabled=True)
 
-        # type: ignore
-        crawler_config = CrawlerRunConfig(
-            markdown_generator=md_generator,
-            screenshot=True,
-            pdf=True,
-            cache_mode="bypass",
-            extraction_strategy=JsonCssExtractionStrategy(schema)
-        )
-        
         # Use crawl4ai to crawl the web page
         async with AsyncWebCrawler(config=browser_config) as crawler:
-            result = await crawler.arun(url=url, config=crawler_config)
-            
+            result = await crawler.arun(url=url, config=crawl_config())
+
             if result.success:
                 # Create directories
                 path = f"{path}/{datetime.now().strftime('%Y%m%d-%H%M%S')}"
