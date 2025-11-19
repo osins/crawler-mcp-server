@@ -53,7 +53,7 @@ pip install -e .
 {
   "mcpServers": {
     "spider": {
-      "command": "/path/to/venv/bin/python",
+      "command": "/path/to/crawler-mcp-server/venv/bin/python",
       "args": [
         "/path/to/crawler-mcp-server/spider_mcp_server/server.py"
       ],
@@ -76,7 +76,7 @@ pip install -e .
     "spider-crawler": {
       "name": "Spider Crawler Server",
       "description": "Web crawling and content extraction server",
-      "command": "/path/to/venv/bin/python",
+      "command": "/path/to/crawler-mcp-server/venv/bin/python",
       "args": [
         "/path/to/crawler-mcp-server/spider_mcp_server/server.py"
       ],
@@ -188,7 +188,7 @@ from mcp.client.stdio import stdio_client
 async def crawl_example():
     # 连接到 MCP 服务器
     server_params = StdioServerParameters(
-        command="/path/to/venv/bin/python",
+        command="/path/to/crawler-mcp-server/venv/bin/python",
         args=["/path/to/crawler-mcp-server/spider_mcp_server/server.py"]
     )
     
