@@ -59,7 +59,7 @@ pip install -e .
       ],
       "description": "MCP spider server using crawl4ai for web crawling and content extraction",
       "env": {
-        "PYTHONPATH": "/path/to/crawler-mcp-server"
+        "PYTHONPATH": "/path/to/crawler-mcp-server/"
       }
     }
   }
@@ -81,7 +81,7 @@ pip install -e .
         "/path/to/crawler-mcp-server/spider_mcp_server/server.py"
       ],
       "environment": {
-        "PYTHONPATH": "/path/to/crawler-mcp-server",
+        "PYTHONPATH": "/path/to/crawler-mcp-server/",
         "CRAWL4AI_LOG_LEVEL": "INFO"
       },
       "timeout": 30000
