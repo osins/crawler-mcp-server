@@ -1,6 +1,12 @@
 
+import os
+import json
+import aiohttp
 from typing import Callable
 from crawl4ai.models import CrawlResult
+from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlerRunConfig, JsonCssExtractionStrategy
+from crawl4ai.content_filter_strategy import PruningContentFilter
+from crawl4ai.markdown_generation_strategy import DefaultMarkdownGenerator
 
 from spider_mcp_server.utils import save
 
@@ -27,3 +33,101 @@ async def saveJson(path: str, result: CrawlResult, call: Callable[[str], None]):
                                 save(file_path, filename, content, call)
                 except Exception as download_error:
                     print(f"Failed to download {file_url}: {download_error}")
+
+
+async def crawl_web_page(url: str, save_path: str) -> str:
+    """
+    Crawl a web page and save content in multiple formats (HTML, JSON, PDF, screenshot) with downloaded files.
+    
+    Args:
+        url: The URL of the web page to crawl
+        save_path: The base file path to save the crawled content and downloaded files
+        
+    Returns:
+        str: Success message or error message
+    """
+    if not url:
+        return "URL is required for crawling"
+    
+    if not save_path:
+        return "Save path is required for saving content"
+    
+    try:
+        schema = {
+            "baseSelector": "body",
+            "fields": [
+                {"name": "title", "selector": "h2", "type": "text"},
+                {"name": "link", "selector": "a", "type": "attribute", "attribute": "href"},
+                {"name": "p", "selector": "p", "type": "text"}
+            ]
+        }
+
+        filter = PruningContentFilter(
+            threshold=0.35,
+            min_word_threshold=3,
+            threshold_type="dynamic"
+        )
+
+        md_generator = DefaultMarkdownGenerator(content_filter=filter)
+
+        # Configure browser and crawler
+        browser_config = BrowserConfig(headless=True, java_script_enabled=True)
+
+        # type: ignore
+        crawler_config = CrawlerRunConfig(
+            markdown_generator=md_generator,
+            screenshot=True,
+            pdf=True,
+            cache_mode="bypass",
+            extraction_strategy=JsonCssExtractionStrategy(schema)
+        )
+        
+        # Use crawl4ai to crawl the web page
+        async with AsyncWebCrawler(config=browser_config) as crawler:
+            result = await crawler.arun(url=url, config=crawler_config)
+            
+            if result.success:
+                # Create directories
+                os.makedirs(save_path, exist_ok=True)
+                files_dir = os.path.join(save_path, 'files')
+                os.makedirs(files_dir, exist_ok=True)
+                
+                saved_files = []
+                
+                # 1. Save HTML file
+                save(save_path, 'output.html', result.html, lambda s: saved_files.append(s))
+                
+                # 2. Save Markdown files
+                if hasattr(result, 'markdown') and result.markdown:
+                    save(
+                        save_path, 
+                        'raw_markdown.md',
+                        result.markdown.raw_markdown, 
+                        lambda s: saved_files.append(s)
+                    )
+
+                    save(
+                        save_path, 
+                        'fit_markdown.md',
+                        result.markdown.fit_markdown, 
+                        lambda s: saved_files.append(s)
+                    )
+                
+                # 3. Save JSON file (extracted_content)
+                save(save_path, 'output.json', result.extracted_content, lambda s: saved_files.append(s))
+                
+                # 4. Save screenshot file
+                save(save_path, 'output.png', result.screenshot, lambda s: saved_files.append(s))
+                
+                # 5. Save PDF file
+                save(save_path, 'output.pdf', result.pdf, lambda s: saved_files.append(s))
+                
+                # 6. Save downloaded files as JSON
+                await saveJson(save_path, result, lambda s: saved_files.append(s))
+                
+                return f"Successfully crawled {url} and saved {len(saved_files)} files to {save_path}"
+            else:
+                print("Error:", result.error_message)
+                return f"Failed to crawl URL: {result.error_message}"
+    except Exception as e:
+        return f"Error crawling URL or saving files: {str(e)}"

@@ -12,15 +12,7 @@ from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import Tool, TextContent, ImageContent, EmbeddedResource
 
-from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlResult, CrawlerRunConfig, JsonCssExtractionStrategy
-from crawl4ai.content_filter_strategy import PruningContentFilter
-from crawl4ai.markdown_generation_strategy import DefaultMarkdownGenerator
-
-import aiohttp
-from numpy import append
-
-from spider_mcp_server.crawl import saveJson
-from spider_mcp_server.utils import save
+from spider_mcp_server.crawl import crawl_web_page
 
 
 # Define the server
@@ -100,103 +92,8 @@ async def handle_call_tool(name: str, arguments: dict[str, object]) -> list[Text
         url = cast(str, arguments.get("url", ""))
         save_path = cast(str, arguments.get("save_path", ""))
         
-        if not url:
-            error_msg = "URL is required for crawling"
-            return [TextContent(type="text", text=error_msg)]
-        
-        if not save_path:
-            error_msg = "Save path is required for saving content"
-            return [TextContent(type="text", text=error_msg)]
-        
-        try:
-            schema = {
-                "baseSelector": "body",
-                "fields": [
-                    {"name": "title", "selector": "h2", "type": "text"},
-                    {"name": "link", "selector": "a", "type": "attribute", "attribute": "href"},
-                    {"name": "p", "selector": "p", "type": "text"}
-                ]
-            }
-
-            filter = PruningContentFilter(
-                threshold=0.35,
-                min_word_threshold=3,
-                threshold_type="dynamic"
-            )
-
-            md_generator = DefaultMarkdownGenerator(content_filter=filter)
-
-            # Configure browser and crawler
-            browser_config = BrowserConfig(headless=True, java_script_enabled=True)
-
-            # type: ignore
-            crawler_config = CrawlerRunConfig(
-                markdown_generator=md_generator,
-                screenshot=True,
-                pdf=True,
-                cache_mode="bypass",
-                extraction_strategy=JsonCssExtractionStrategy(schema)
-            )
-            
-            # Use crawl4ai to crawl the web page
-            async with AsyncWebCrawler(config=browser_config) as crawler:
-                result = await crawler.arun(url=url, config=crawler_config)
-                
-                if result.success:
-                    # Create directories
-                    os.makedirs(save_path, exist_ok=True)
-                    files_dir = os.path.join(save_path, 'files')
-                    os.makedirs(files_dir, exist_ok=True)
-                    
-                    saved_files = []
-                    
-                    # 1. Save HTML file
-                    if hasattr(result, 'html') and result.html:
-                        html_path = os.path.join(save_path, 'output.html')
-                        with open(html_path, 'w', encoding='utf-8') as f:
-                            if isinstance(result.html, str):
-                                f.write(result.html)
-                            else:
-                                _ = f.write(str(result.html))
-                        saved_files.append(html_path)
-                    
-                    # 2. Save Markdown files
-                    if hasattr(result, 'markdown') and result.markdown:
-                        save(
-                            save_path, 
-                            'raw_markdown.md',
-                            result.markdown.raw_markdown, 
-                            lambda s: saved_files.append(s)
-                        )
-
-                        save(
-                            save_path, 
-                            'fit_markdown.md',
-                            result.markdown.fit_markdown, 
-                            lambda s: saved_files.append(s)
-                        )
-                    
-                    # 3. Save JSON file (extracted_content)
-                    save(save_path, 'output.json', result.extracted_content, lambda s: saved_files.append(s))
-                    
-                    # 4. Save screenshot file
-                    save(save_path, 'output.png', result.screenshot, lambda s: saved_files.append(s))
-                    
-                    # 5. Save PDF file
-                    save(save_path, 'output.pdf', result.pdf, lambda s: saved_files.append(s))
-                    
-                    # 6. Save downloaded files as JSON
-                    await saveJson(save_path, result, lambda s: saved_files.append(s))
-                    
-                    success_msg = f"Successfully crawled {url} and saved {len(saved_files)} files to {save_path}"
-                    return [TextContent(type="text", text=success_msg)]
-                else:
-                    print("Error:", result.error_message)
-                    error_msg = f"Failed to crawl URL: {result.error_message}"
-                    return [TextContent(type="text", text=error_msg)]
-        except Exception as e:
-            error_msg = f"Error crawling URL or saving files: {str(e)}"
-            return [TextContent(type="text", text=error_msg)]
+        result = await crawl_web_page(url, save_path)
+        return [TextContent(type="text", text=result)]
     else:
         error_msg = f"Unknown tool: {name}"
         return [TextContent(type="text", text=error_msg)]
