@@ -49,7 +49,6 @@ pip install -e .
 **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
 
-**方案一：推荐配置（使用 PYTHONPATH）**
 ```json
 {
   "mcpServers": {
@@ -57,25 +56,6 @@ pip install -e .
       "command": "/path/to/crawler-mcp-server/venv/bin/python",
       "args": [
         "/path/to/crawler-mcp-server/spider_mcp_server/server.py"
-      ],
-      "description": "MCP spider server using crawl4ai for web crawling and content extraction",
-      "env": {
-        "PYTHONPATH": "/path/to/crawler-mcp-server/"
-      }
-    }
-  }
-}
-```
-
-**方案二：使用模块运行（无需 PYTHONPATH）**
-```json
-{
-  "mcpServers": {
-    "spider": {
-      "command": "/path/to/crawler-mcp-server/venv/bin/python",
-      "args": [
-        "-m",
-        "spider_mcp_server.server"
       ],
       "description": "MCP spider server using crawl4ai for web crawling and content extraction"
     }
@@ -95,8 +75,7 @@ pip install -e .
       "description": "Web crawling and content extraction server",
       "command": "/path/to/crawler-mcp-server/venv/bin/python",
       "args": [
-        "-m",
-        "spider_mcp_server.server"
+        "/path/to/crawler-mcp-server/spider_mcp_server/server.py"
       ],
       "timeout": 30000
     }
@@ -106,16 +85,11 @@ pip install -e .
 
 ### 📋 配置说明
 
-**推荐使用模块运行方式：**
-- 使用 `-m spider_mcp_server.server` 参数
-- Python 自动处理模块导入路径
-- 无需设置任何环境变量
-- 更简洁、更可靠
-
-**如果必须直接运行脚本：**
-- 需要设置 `PYTHONPATH` 环境变量指向项目根目录
-- 代码中使用了相对导入：`from spider_mcp_server.crawl import saveJson`
-- 不设置会出现 `ModuleNotFoundError: No module named 'spider_mcp_server'`
+**直接运行脚本即可：**
+- 无需设置环境变量
+- 无需使用 `-m` 参数
+- Python 会自动处理相对导入
+- 配置最简洁，最可靠
 
 ### 环境变量配置
 
@@ -212,10 +186,10 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
 async def crawl_example():
-    # 连接到 MCP 服务器（使用模块运行，无需环境变量）
+    # 连接到 MCP 服务器（直接运行，无需额外参数）
     server_params = StdioServerParameters(
         command="/path/to/crawler-mcp-server/venv/bin/python",
-        args=["-m", "spider_mcp_server.server"]
+        args=["/path/to/crawler-mcp-server/spider_mcp_server/server.py"]
     )
     
     async with stdio_client(server_params) as (read, write):
