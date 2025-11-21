@@ -4,14 +4,19 @@ An MCP (Model Context Protocol) spider server based on [crawl4ai](https://github
 
 ## 🚀 Features
 
-- **Intelligent Web Crawling**: Use crawl4ai for efficient web content extraction
-- **Multi-format Output**: Support HTML, Markdown, JSON, PDF, and PNG formats
-- **Screenshot Function**: Automatic webpage screenshot generation
-- **PDF Export**: Export webpage content as PDF files
-- **Content Filtering**: Use PruningContentFilter to optimize content extraction
-- **Structured Data Extraction**: Support JsonCssExtractionStrategy for precise data extraction
-- **File Downloads**: Automatically download and save referenced files
-- **MCP Protocol Support**: Fully compatible with MCP standard, integrable with MCP-supporting clients
+- **智能网络爬虫**: 基于 crawl4ai 的高效网页内容提取
+- **LLM 增强提取**: 集成大语言模型，支持智能内容理解和结构化提取
+- **多格式输出**: 支持 HTML、Markdown、JSON、PDF 和 PNG 格式
+- **智能内容提取**: 使用 LLMExtractionStrategy 进行基于语义的内容提取
+- **灵活配置**: 支持传统 CSS 选择器提取和 LLM 智能提取两种模式
+- **截图功能**: 自动生成网页截图
+- **PDF 导出**: 将网页内容导出为 PDF 文件
+- **内容过滤**: 使用 PruningContentFilter 优化内容提取
+- **结构化数据提取**: 支持 JsonCssExtractionStrategy 精确数据提取
+- **文件下载**: 自动下载并保存引用文件
+- **多模型支持**: 支持 Ollama、OpenAI、Claude 等多种 LLM 提供商
+- **环境变量配置**: 灵活的模型配置和切换机制
+- **MCP 协议支持**: 完全兼容 MCP 标准，可集成到支持 MCP 的客户端
 
 ## 📦 Installation
 
@@ -19,6 +24,11 @@ An MCP (Model Context Protocol) spider server based on [crawl4ai](https://github
 
 - Python 3.8+
 - Virtual environment recommended
+- **LLM 依赖**: 
+  - `litellm` - 统一的多模型 LLM 接口
+  - Ollama 或其他 LLM 提供商 (可选，用于智能内容提取)
+- **浏览器依赖**: 
+  - Chrome/Chromium (crawl4ai 需要)
 
 ### Installation Steps
 
@@ -91,6 +101,27 @@ If you use other MCP clients, you can use the following general configuration:
 - No need to use `-m` parameter
 - Python automatically handles relative imports
 - Most simple and reliable configuration
+
+### 🤖 LLM 配置选项
+
+为了启用 LLM 增强功能，可以设置以下环境变量：
+
+```bash
+# 启用 LLM 模式
+export CRAWL_MODE=llm
+
+# LLM 提供商配置
+export LLAMA_PROVIDER="ollama/qwen2.5-coder:latest"  # 默认值
+export LLAMA_API_TOKEN="your_api_token"             # 可选，某些提供商需要
+export LLAMA_BASE_URL="http://localhost:11434"       # 可选，自定义 API 端点
+export LLAMA_MAX_TOKENS=4096                         # 可选，最大 token 数
+```
+
+**支持的 LLM 提供商:**
+- **Ollama**: `ollama/model-name` (本地部署)
+- **OpenAI**: `openai/gpt-4` / `openai/gpt-3.5-turbo`
+- **Claude**: `anthropic/claude-3-sonnet`
+- **其他**: 通过 litellm 支持的所有提供商
 
 ## 🛠️ MCP Protocol Usage Guide
 
@@ -195,7 +226,7 @@ async def safe_crawl(session: ClientSession, url: str, save_path: str):
 
 ### 1. `crawl_web_page`
 
-Crawl webpage content from the specified URL and save in multiple formats.
+Crawl webpage content from the specified URL and save in multiple formats. Supports both traditional CSS extraction and LLM-enhanced extraction modes.
 
 **Parameters:**
 - `url` (string, required): The webpage URL to crawl
@@ -209,14 +240,24 @@ Crawl webpage content from the specified URL and save in multiple formats.
 - Structured data extraction (JSON)
 - HTML content preservation
 - Downloaded files processing
+- **LLM 智能提取** (当设置 CRAWL_MODE=llm 时启用):
+  - 基于语义的内容理解
+  - 自动去除导航、广告等非主要内容
+  - 结构化的 Markdown 输出
+  - 支持多种 LLM 提供商
 
 **Example usage:**
 ```python
-# Crawl webpage and save to specified directory
+# 传统爬取模式
 result = await session.call_tool("crawl_web_page", {
     "url": "https://example.com",
     "save_path": "./output_directory"
 })
+
+# LLM 增强模式 (设置环境变量)
+os.environ["CRAWL_MODE"] = "llm"
+os.environ["LLAMA_PROVIDER"] = "ollama/qwen2.5-coder:latest"
+os.environ["LLAMA_BASE_URL"] = "http://localhost:11434"
 ```
 
 ### 2. `say_hello`
@@ -337,6 +378,43 @@ for i, url in enumerate(urls):
     await asyncio.sleep(2)
 ```
 
+### LLM 增强爬取示例
+
+```python
+import os
+import asyncio
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
+
+async def llm_enhanced_crawl():
+    # 配置 LLM 环境变量
+    os.environ["CRAWL_MODE"] = "llm"
+    os.environ["LLAMA_PROVIDER"] = "ollama/qwen2.5-coder:latest"
+    os.environ["LLAMA_BASE_URL"] = "http://localhost:11434"
+    
+    # 配置服务器连接
+    server_params = StdioServerParameters(
+        command="/path/to/venv/bin/python",
+        args=["/path/to/spider_mcp_server/server.py"]
+    )
+    
+    async with stdio_client(server_params) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            
+            # LLM 增强爬取
+            result = await session.call_tool("crawl_web_page", {
+                "url": "https://example.com/article",
+                "save_path": "./llm_results"
+            })
+            
+            for content in result.content:
+                if content.type == "text":
+                    print(f"LLM 增强爬取结果: {content.text}")
+
+asyncio.run(llm_enhanced_crawl())
+```
+
 ## 🧪 Development and Testing
 
 ### Run Tests
@@ -383,8 +461,11 @@ crawler-mcp-server/
 │   ├── __init__.py            # Package initialization
 │   ├── server.py              # MCP server implementation
 │   ├── crawl.py              # Crawling logic and file handling
+│   ├── llm.py                # LLM configuration and extraction strategies
 │   └── utils.py              # Utility functions for file I/O
 ├── test/                     # Test suite
+│   ├── test_litellm_ollama.py # LLM integration tests
+│   └── ...                   # Other test files
 ├── test_output/              # Test output directory
 ├── typings/                  # Type stubs for crawl4ai
 ├── pyproject.toml            # Project configuration
@@ -394,6 +475,21 @@ crawler-mcp-server/
 ## 📚 API Reference
 
 ### Core Classes and Functions
+
+#### `llm_config()` function (`llm.py`)
+配置 LLM 增强爬取策略。
+
+**参数:**
+- `instruction` (str): 提取指令，默认为专门优化的网页内容提取指令
+
+**返回:**
+- `CrawlerRunConfig`: 配置了 LLM 提取策略的爬取配置
+
+**特性:**
+- 支持 litellm 的所有提供商
+- 自动分块处理大型内容
+- 智能内容过滤和结构化输出
+- 可配置的温度和 token 参数
 
 #### `save()` function (`utils.py`)
 Save content to files with proper encoding handling.
@@ -412,11 +508,36 @@ Async function to save downloaded files information and handle file downloads.
 - Downloads and saves referenced files to `files/` subdirectory
 - Error handling for failed downloads
 
+#### `crawl_config()` function (`crawl.py`)
+动态选择爬取配置，根据环境变量决定是否启用 LLM 模式。
+
+**环境变量:**
+- `CRAWL_MODE=llm`: 启用 LLM 增强提取
+- 其他值: 使用传统 CSS 选择器提取
+
 ## 🎯 Configuration Details
+
+### LLM 提取策略
+
+当启用 LLM 模式时，使用以下智能提取配置：
+
+**默认提取指令:**
+```
+You are a **Web Content Extraction Assistant**. Your task is to extract the **complete, clean, and precise main text content** from a given web page...
+```
+
+**LLM 配置参数:**
+- `provider`: 通过 `LLAMA_PROVIDER` 环境变量配置
+- `api_token`: 通过 `LLAMA_API_TOKEN` 环境变量配置
+- `base_url`: 通过 `LLAMA_BASE_URL` 环境变量配置  
+- `max_tokens`: 默认 4096，可通过 `LLAMA_MAX_TOKENS` 调整
+- `temperature`: 0.1 (确保输出稳定性)
+- `chunk_token_threshold`: 1400 (分块处理阈值)
+- `apply_chunking`: true (启用内容分块)
 
 ### CSS Extraction Strategy
 
-The crawler uses a pre-configured CSS extraction schema:
+传统模式使用预配置的 CSS 提取模式：
 
 ```javascript
 {
@@ -431,15 +552,15 @@ The crawler uses a pre-configured CSS extraction schema:
 
 ### Content Filtering
 
-Uses `PruningContentFilter` with these settings:
-- `threshold`: 0.35 (dynamic threshold)
+使用 `PruningContentFilter` 配置：
+- `threshold`: 0.35 (动态阈值)
 - `min_word_threshold`: 3
 - `threshold_type`: "dynamic"
 
 ### Browser Configuration
 
 - Headless mode enabled
-- JavaScript enabled
+- JavaScript enabled  
 - Bypass cache for fresh content
 
 ## ⚠️ Important Notes
@@ -469,6 +590,8 @@ This project uses MIT License - see [LICENSE](LICENSE) file for details.
 - [crawl4ai Official Documentation](https://github.com/unclecode/crawl4ai)
 - [MCP Protocol Specification](https://modelcontextprotocol.io/)
 - [Claude Desktop Documentation](https://docs.anthropic.com/claude/docs/overview)
+- [LiteLLM Documentation](https://docs.litellm.ai/)
+- [Ollama Documentation](https://github.com/ollama/ollama)
 - [Project Package](https://pypi.org/project/spider-mcp/)
 
 ## 📞 Support

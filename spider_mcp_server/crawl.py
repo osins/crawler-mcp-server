@@ -14,13 +14,14 @@ from crawl4ai.content_filter_strategy import PruningContentFilter
 from crawl4ai.markdown_generation_strategy import DefaultMarkdownGenerator
 from crawl4ai.extraction_strategy import JsonXPathExtractionStrategy
 
-from spider_mcp_server.llm import llm_config
+from spider_mcp_server.crawl_json import save_json
+from spider_mcp_server.llm import DEFAULT_INSTRUCTION, llm_config
 from spider_mcp_server.utils import save
 
 
-def crawl_config():
+def crawl_config(instruction: str = DEFAULT_INSTRUCTION):
     if(os.getenv("CRAWL_MODE") == "llm"):
-        return llm_config()
+        return llm_config(instruction)
 
     return CrawlerRunConfig(
         markdown_generator=DefaultMarkdownGenerator(),
@@ -29,7 +30,7 @@ def crawl_config():
         cache_mode="bypass" 
     )
 
-async def saveJson(path: str, result: CrawlResult, call: Callable[[str], None]):
+async def save_download_files_json(path: str, result: CrawlResult, call: Callable[[str], None]):
     if hasattr(result, 'downloaded_files') and result.downloaded_files:
         save(path, 'downloaded_files.json', json.dumps(result.downloaded_files), call)
 
@@ -54,7 +55,7 @@ async def saveJson(path: str, result: CrawlResult, call: Callable[[str], None]):
                     print(f"Failed to download {file_url}: {download_error}")
 
 
-async def crawl_web_page(url: str, path: str) -> str:
+async def crawl_web_page(url: str, path: str, instruction:str = DEFAULT_INSTRUCTION) -> str:
     """
     Crawl a web page and save content in multiple formats (HTML, JSON, PDF, screenshot) with downloaded files.
     
@@ -77,7 +78,7 @@ async def crawl_web_page(url: str, path: str) -> str:
 
         # Use crawl4ai to crawl the web page
         async with AsyncWebCrawler(config=browser_config) as crawler:
-            result = await crawler.arun(url=url, config=crawl_config())
+            result = await crawler.arun(url=url, config=crawl_config(instruction))
 
             if result.success:
                 # Create directories
@@ -91,7 +92,7 @@ async def crawl_web_page(url: str, path: str) -> str:
                 # 1. Save HTML file
                 save(path, 'output.html', result.html, lambda s: saved_files.append(s))
                 
-                # 2. Save Markdown files
+                # 2. Save Markdown files (only if not using LLM extraction)
                 if hasattr(result, 'markdown') and result.markdown:
                     save(
                         path, 
@@ -106,10 +107,24 @@ async def crawl_web_page(url: str, path: str) -> str:
                         result.markdown.fit_markdown, 
                         lambda s: saved_files.append(s)
                     )
+                elif hasattr(result, 'extracted_content') and result.extracted_content:
+                    # For LLM extraction, save the extracted JSON content as markdown
+                    save(
+                        path, 
+                        'extracted_content.md',
+                        json.dumps(result.extracted_content, ensure_ascii=False, indent=2), 
+                        lambda s: saved_files.append(s)
+                    )
                 
                 # 3. Save JSON file (extracted_content)
-                save(path, 'output.json', result.extracted_content, lambda s: saved_files.append(s))
-                
+                if hasattr(result, 'extracted_content') and result.extracted_content:
+                    # Save LLM extracted content as JSON
+                    print("output json:", result.extracted_content)
+                    save(path, 'output.json', json.dumps(result.extracted_content, ensure_ascii=False, indent=2), lambda s: saved_files.append(s))
+                else:
+                    # Save HTML structure as JSON (fallback)
+                    save_json(path, 'output.json', result.html, lambda s: saved_files.append(s))
+
                 # 4. Save screenshot file
                 save(path, 'output.png', result.screenshot, lambda s: saved_files.append(s))
                 
@@ -117,7 +132,7 @@ async def crawl_web_page(url: str, path: str) -> str:
                 save(path, 'output.pdf', result.pdf, lambda s: saved_files.append(s))
                 
                 # 6. Save downloaded files as JSON
-                await saveJson(path, result, lambda s: saved_files.append(s))
+                await save_download_files_json(path, result, lambda s: saved_files.append(s))
                 
                 return f"Successfully crawled {url} and saved {len(saved_files)} files to {path}"
             else:
@@ -125,3 +140,4 @@ async def crawl_web_page(url: str, path: str) -> str:
                 return f"Failed to crawl URL: {result.error_message}"
     except Exception as e:
         return f"Error crawling URL or saving files: {str(e)}"
+

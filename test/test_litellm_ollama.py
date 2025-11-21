@@ -8,8 +8,10 @@ import os
 import litellm
 from crawl4ai import AsyncWebCrawler, LLMConfig, CrawlerRunConfig, LLMExtractionStrategy
 
-PROVIDER = "ollama/qwen2.5-coder:7b"
-API_BASE = "http://192.168.50.2:11434"
+from spider_mcp_server.llm_client import LLMClient
+
+PROVIDER = "ollama/qwen2.5:7b"
+API_BASE = "http://localhost:11434"
 
 def test_litellm():
     # 调用本地 Ollama 模型
@@ -29,6 +31,15 @@ def test_litellm():
         else:
             print(response)
         print("=== 响应结束 ===")
+
+async def test_llm_client():
+    print("正在调用 LLMClient...")
+    client = LLMClient()
+    response = client.ask([
+        {"role": "user", "content": "你好，请回答一个简单问题：1+1=多少？"}
+    ])
+    print(response)
+    print("=== LLMClient 响应结束 ===")
 
 async def test_crawl_llama():
     # 配置 LLM 用于提取
@@ -62,7 +73,7 @@ async def test_crawl_llama():
     async with AsyncWebCrawler(verbose=True) as crawler:
         print("Making request to Crawl4AI with Ollama config...")
         result = await crawler.arun(
-            url="https://example.com",
+            url="https://zh.wikipedia.org/zh-cn/玉蒲團之偷情寶鑑",
             config=crawler_config
         )        
 
@@ -77,7 +88,12 @@ async def main():
     try:
         # 先测试 Ollama 连接
         test_litellm()
-        await test_crawl_llama()
+
+        # 再测试 LLMClient
+        await test_llm_client()
+
+        # 最后测试 Crawl4AI 调用
+        # await test_crawl_llama()
     except Exception as e:
         print("调用过程中出现异常：", str(e))
         traceback.print_exc()

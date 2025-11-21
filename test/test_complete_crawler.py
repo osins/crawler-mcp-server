@@ -28,7 +28,7 @@ async def test_complete_crawler():
         
         # Test crawler call
         result = await handle_call_tool("crawl_web_page", {
-            "url": "https://zh.wikipedia.org/zh-cn/%E7%8E%89%E8%92%B2%E5%9C%98%E4%B9%8B%E5%81%B7%E6%83%85%E5%AF%B6%E9%91%91",
+            "url": os.getenv("TEST_URL", "https://zh.wikipedia.org/wiki/Wikipedia:%E9%A6%96%E9%A1%B5"),
             "save_path": temp_dir
         })
         

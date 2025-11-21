@@ -13,6 +13,7 @@ from mcp.server.stdio import stdio_server
 from mcp.types import Tool, TextContent, ImageContent, EmbeddedResource
 
 from spider_mcp_server.crawl import crawl_web_page
+from spider_mcp_server.llm import DEFAULT_INSTRUCTION
 
 
 # Define the server
@@ -66,6 +67,11 @@ async def handle_list_tools() -> list[Tool]:
                     "save_path": {
                         "type": "string", 
                         "description": "The base file path to save the crawled content and downloaded files"
+                    },
+                    "instruction": {
+                        "type": "string",
+                        "description": "The instruction to use for the LLM",
+                        "default": DEFAULT_INSTRUCTION
                     }
                 },
                 "required": ["url", "save_path"]
@@ -91,8 +97,9 @@ async def handle_call_tool(name: str, arguments: dict[str, object]) -> list[Text
     elif name == "crawl_web_page":
         url = cast(str, arguments.get("url", ""))
         save_path = cast(str, arguments.get("save_path", ""))
+        instruction = cast(str, arguments.get("instruction", DEFAULT_INSTRUCTION))
         
-        result = await crawl_web_page(url, save_path)
+        result = await crawl_web_page(url, save_path, instruction)
         return [TextContent(type="text", text=result)]
     else:
         error_msg = f"Unknown tool: {name}"
