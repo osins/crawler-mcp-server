@@ -16,7 +16,12 @@ python launch_server.py
 ./launch_server.sh
 ```
 
-### Option 3: Direct execution
+### Option 3: Using the batch script (Windows)
+```cmd
+launch_server.bat
+```
+
+### Option 4: Direct execution
 ```bash
 python mcp_server/server.py
 ```
@@ -91,7 +96,26 @@ If the package is installed in the virtual environment, you can use the console 
 }
 ```
 
-> **Note**: The launch script (Method 1) is recommended because it will:
+### Method 4: Windows Configuration
+
+For Windows systems, use the batch script:
+
+```json
+{
+  "mcpServers": {
+    "dev-tool-mcp": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "cd /d C:\\absolute\\path\\to\\your\\dev-tool-mcp && launch_server.bat"
+      ],
+      "description": "MCP development tool server providing web crawling, browser automation, content extraction, and real-time page analysis capabilities"
+    }
+  }
+}
+```
+
+> **Note**: The launch scripts (Methods 1-3 on Unix/Linux/Mac and Method 4 on Windows) are recommended because they will:
 > - Check if the virtual environment exists
 > - Create it if needed
 > - Install dependencies from pyproject.toml
