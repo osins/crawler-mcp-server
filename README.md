@@ -23,9 +23,9 @@ To configure this server with MCP, add the following to your MCP client configur
 {
   "mcpServers": {
     "dev-tool-mcp": {
-      "command": "/path/to/dev-tool-mcp/venv/bin/python",
+      "command": "python",
       "args": [
-        "/path/to/dev-tool-mcp/mcp_server/server.py"
+        "/absolute/path/to/your/dev-tool-mcp/mcp_server/server.py"
       ],
       "description": "MCP development tool server providing web crawling, browser automation, content extraction, and real-time page analysis capabilities"
     }
@@ -33,7 +33,39 @@ To configure this server with MCP, add the following to your MCP client configur
 }
 ```
 
-Make sure to replace `/path/to/dev-tool-mcp/` with the actual path to your project directory.
+Make sure to replace `/absolute/path/to/your/dev-tool-mcp/` with the actual absolute path to your project directory.
+
+For example, if your project is located at `/Users/username/projects/dev-tool-mcp`, the configuration would be:
+
+```json
+{
+  "mcpServers": {
+    "dev-tool-mcp": {
+      "command": "python",
+      "args": [
+        "/Users/username/projects/dev-tool-mcp/mcp_server/server.py"
+      ],
+      "description": "MCP development tool server providing web crawling, browser automation, content extraction, and real-time page analysis capabilities"
+    }
+  }
+}
+```
+
+Alternatively, if you want to use the virtual environment Python directly:
+
+```json
+{
+  "mcpServers": {
+    "dev-tool-mcp": {
+      "command": "/Users/username/projects/dev-tool-mcp/venv/bin/python",
+      "args": [
+        "/Users/username/projects/dev-tool-mcp/mcp_server/server.py"
+      ],
+      "description": "MCP development tool server providing web crawling, browser automation, content extraction, and real-time page analysis capabilities"
+    }
+  }
+}
+```
 
 ## Features
 
