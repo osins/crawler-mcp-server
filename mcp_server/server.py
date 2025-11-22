@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 An MCP (Model Context Protocol) server that provides web crawling capabilities using crawl4ai.
+Supports multiple content formats output (HTML, JSON, PDF, screenshots, Markdown) and browser interaction features.
 """
 
 import asyncio
@@ -27,7 +28,7 @@ async def handle_list_tools() -> list[Tool]:
     tools = [
         Tool(
             name="say_hello",
-            description="A simple tool that greets the user",
+            description="A simple greeting tool that returns personalized messages to users",
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -42,7 +43,7 @@ async def handle_list_tools() -> list[Tool]:
         ),
         Tool(
             name="echo_message",
-            description="Echo back the message provided by the user",
+            description="Echo tool that returns user-provided information as-is",
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -56,7 +57,7 @@ async def handle_list_tools() -> list[Tool]:
         ),
         Tool(
             name="crawl_web_page",
-            description="Crawl a web page and save content in multiple formats (HTML, JSON, PDF, screenshot) with downloaded files",
+            description="Crawl web page content and save in multiple formats (HTML, JSON, PDF, screenshots) while downloading file resources from the page",
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -93,7 +94,7 @@ async def handle_list_tools() -> list[Tool]:
         ),
         Tool(
             name="get_page_content",
-            description="Get the content of a web page by URL",
+            description="Get complete content of a specified URL webpage, including HTML structure and page data",
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -116,7 +117,7 @@ async def handle_list_tools() -> list[Tool]:
         ),
         Tool(
             name="get_console_messages",
-            description="Get console messages from a web page by URL",
+            description="Capture console output information from specified URL webpage (including logs, warnings, errors, etc.)",
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -139,7 +140,7 @@ async def handle_list_tools() -> list[Tool]:
         ),
         Tool(
             name="get_network_requests",
-            description="Get network requests made by a web page by URL",
+            description="Monitor and retrieve all network requests initiated by specified URL webpage (API calls, resource loading, etc.)",
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -269,7 +270,7 @@ async def handle_call_tool(name: str, arguments: dict[str, object]) -> list[Text
 
 async def main():
     """
-    Main entry point for the dev-tool MCP server.
+    Main entry point for the dev-tool MCP server - provides web crawling, content extraction, and browser interaction features.
     """
     async with stdio_server() as (stdin, stdout):
         await server.run(
